@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSE Client Example</title>
+  <script src="
+https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js
+"></script>
+<link href="
+https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css
+" rel="stylesheet">
+<link href="
+style.css
+" rel="stylesheet">
+
+</head>
+
+<body>
+  
+  <div class="col-sm-8 conversation">
+    <div class="row heading">
+      <div class="col-sm-2 col-md-1 col-xs-3 heading-avatar">
+        <div class="heading-avatar-icon">
+          <img src="https://bootdey.com/img/Content/avatar/avatar6.png">
+        </div>
+      </div>
+      <div class="col-sm-8 col-xs-7 heading-name">
+        <a class="heading-name-meta">John Doe
+        </a>
+        <span class="heading-online">Online</span>
+      </div>
+      <div class="col-sm-1 col-xs-1  heading-dot pull-right">
+        <i class="fa fa-ellipsis-v fa-2x  pull-right" aria-hidden="true"></i>
+      </div>
+    </div>
+
+    <div class="row message" id="conversation">
+      <div class="row message-previous">
+        <div class="col-sm-12 previous">
+          <a onclick="previous(this)" id="ankitjain28" name="20">
+          Show Previous Message!
+          </a>
+        </div>
+      </div>
+
+      <div class="row message-body">
+        <div class="col-sm-12 message-main-receiver">
+          <div class="receiver">
+            <div class="message-text">
+             Hi, what are you doing?!
+            </div>
+            <span class="message-time pull-right">
+              Sun
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row message-body">
+        <div class="col-sm-12 message-main-sender">
+          <div class="sender">
+            <div class="message-text">
+              I am doing nothing man!
+            </div>
+            <span class="message-time pull-right">
+              Sun
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row reply">
+      <div class="col-sm-1 col-xs-1 reply-emojis">
+        <i class="fa fa-smile-o fa-2x"></i>
+      </div>
+      <div class="col-sm-9 col-xs-9 reply-main">
+        <textarea class="form-control" rows="1" id="comment"></textarea>
+      </div>
+      <div class="col-sm-1 col-xs-1 reply-recording">
+        <i class="fa fa-microphone fa-2x" aria-hidden="true"></i>
+      </div>
+      <div class="col-sm-1 col-xs-1 reply-send">
+        <i class="fa fa-send fa-2x" aria-hidden="true"></i>
+      </div>
+    </div>
+  </div>
+  <h1>Chat with Stream API</h1>
+  <textarea type="text" id="inputMessage" placeholder="Type your message here..." />
+  <button id="sendMessage">Send Message</button>
+  <div id="chatOutput"></div>
+
+  <script>
+    document.getElementById('sendMessage').addEventListener('click', async () => {
+      const message = document.getElementById('inputMessage').value;
+
+      if (!message) {
+        alert("Please enter a message.");
+        return;
+      }
+
+      // Fetch the token from wherever you store it
+      const token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9vYWMuamFiYXJwcm92LmdvLmlkXC9hcGlcL2xvZ2luIiwiaWF0IjoxNzIxNjk5NDM1LCJleHAiOjE3MjE3ODU4MzUsIm5iZiI6MTcyMTY5OTQzNSwianRpIjoiV0Rzc0NGOXNlNDJIeUQwRyIsInN1YiI6IjEiLCJwcnYiOiI4N2UwYWYxZWY5ZmQxNTgxMmZkZWM5NzE1M2ExNGUwYjA0NzU0NmFhIn0.sEiQyn3dBqyoJ3VLmbU6nK00IkLC5ItSEIijOXNnPY8'; // Replace with your JWT
+
+      // Create a new EventSource to receive SSE
+      const response = await fetch('http://localhost:3000/chat', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: message })
+      });
+
+      // Check if the response is ok (status 200-299)
+      if (!response.ok) {
+        console.error('Error:', response.statusText);
+        return;
+      }
+
+      // Create an SSE listener
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let chatOutput = document.getElementById('chatOutput');
+
+      // Read the streaming response
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const dataChunk = decoder.decode(value, { stream: true });
+        const messages = dataChunk.split('\n').filter(Boolean);
+
+        messages.forEach(data => {
+          if (data.startsWith('data: ')) {
+            const messageData = data.replace('data: ', '');
+            chatOutput.innerHTML += `${messageData}`;
+          }
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>
